@@ -6,17 +6,51 @@ import {
   UseInterceptors,
   Logger,
   BadRequestException,
+  UsePipes,
+  ValidationPipe,
+  UseGuards,
+  Get,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
-import { Express } from 'express';
+import { Express, Request, Response } from 'express';
 import { CreateStudentDto } from './dto/student.dto';
+import { userAuthDto } from './dto/userAuth.dto';
+import { JwtAuthGuard } from './jwt.auth.guard';
 
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
   constructor(private readonly authService: AuthService) {}
+
+  @Post('/login')
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  )
+  async Login(
+    @Body('authBody') authBody: userAuthDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    console.log(authBody);
+    const { access_token } = await this.authService.loginUser(authBody);
+    response.cookie('authToken', access_token, {
+      httpOnly: true,
+      secure: true,
+      maxAge: 3600000 * 24 * 7, // 7Jours
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/get')
+  async getInfo(@Req() request: Request) {
+    return request.user;
+  }
 
   @Post('register')
   @UseInterceptors(

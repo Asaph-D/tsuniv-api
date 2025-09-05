@@ -8,15 +8,13 @@ import { DatabaseModule } from '../database/database.module';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 
-console.log(process.env.jwtSecret);
-
 @Module({
   imports: [
     DatabaseModule,
     JwtModule.register({
       global: true,
       secret: process.env.jwtSecret,
-      signOptions: { expiresIn: '30d' },
+      signOptions: { expiresIn: '7d' },
     }),
   ],
   providers: [AuthService, PrismaService, SupabaseService, JwtStrategy],

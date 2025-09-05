@@ -1,18 +1,24 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  UseInterceptors,
+  Request,
+} from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/jwt.auth.guard';
+import { RedirectOnAuthFailInterceptor } from 'src/common/interceptors/RedirectOnAuthFailInterceptor';
 import { UsersService } from './users.service';
-import { User } from './dto/user';
 
 @Controller('users')
 export class UsersController {
-  constructor(private userService: UsersService) {}
+  constructor(private readonly userService: UsersService) {}
 
-  @Get()
-  async getUsers() {
-    const Users = await this.userService.getUsers();
-    return Users;
-  }
-  @Post()
-  createUser(@Body() User: User) {
-    this.userService.createUser(User);
+  @UseInterceptors(RedirectOnAuthFailInterceptor)
+  @UseGuards(JwtAuthGuard)
+  @Get('/profile')
+  async getUser(@Request() req) {
+    const userId = req.user.userId;
+    const userProfile = await this.userService.getFullUserProfile(userId);
+    return userProfile;
   }
 }
