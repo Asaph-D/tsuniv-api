@@ -1,24 +1,108 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Ce schéma Prisma définit le modèle de votre application de manière déclarative.
+// Il est la source de vérité pour votre base de données.
+// Après avoir modifié ce fichier, exécutez "npx prisma migrate dev".
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../generated/prisma"
+provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+provider = "postgresql"
+url      = env("DATABASE_URL")
 }
 
+enum Role {
+ETUDIANT
+ADMIN
+// ... autres rôles
+}
+
+enum DocumentType {
+CNI
+PASSEPORT
+PERMIS_DE_CONDUIRE
+// ... autres types
+}
+
+enum Kinship {
+PERE
+MERE
+AUTRE
+}
 
 model User {
-  id Int @id @default(autoincrement())
-  email String @unique
-  name String
-  createdAt DateTime @default(now())
+id              String   @id @default(uuid())
+email           String   @unique
+password        String
+firstName       String
+lastName        String
+phone           String?
+role            Role     @default(ETUDIANT)
+consentementCGU Boolean
+student         Student? @relation(fields: [studentId], references: [id])
+studentId       String?  @unique
+
+createdAt       DateTime @default(now())
+updatedAt       DateTime @updatedAt
+}
+
+model Student {
+id                    String                   @id @default(uuid())
+user                  User?
+sexe                  String?
+birthDate             DateTime?
+typeDocument          DocumentType?
+cityOfStudy           String?                 
+parentProfile         ParentProfile?           @relation(fields: [parentProfileId], references: [id])
+parentProfileId       String?                  @unique
+notificationPreferences NotificationPreferences? @relation(fields: [notificationId], references: [id])
+notificationId        String?                  @unique
+
+// Champs pour l'activité de l'étudiant
+favorites             Int                      @default(0)
+searches              Int                      @default(0)
+
+// Champ de vérification global
+isVerified            Boolean                  @default(false)
+
+createdAt             DateTime                 @default(now())
+updatedAt             DateTime                 @updatedAt
+
+StudentDocuments StudentDocuments[]
+}
+
+model StudentDocuments {
+id               String   @id @default(uuid())
+studentId        String   @unique
+student          Student  @relation(fields: [studentId], references: [id])
+identityPhotoUrl String
+identityDocUrl   String
+isVerified       Boolean  @default(false)
+verifiedAt       DateTime?
+
+createdAt        DateTime @default(now())
+updatedAt        DateTime @updatedAt
+}
+
+model NotificationPreferences {
+id          String   @id @default(uuid())
+email       Boolean  @default(true)
+push        Boolean  @default(true)
+newsletter  Boolean  @default(false)
+priceAlerts Boolean  @default(true)
+student     Student?
+
+createdAt   DateTime @default(now())
+updatedAt   DateTime @updatedAt
+}
+
+model ParentProfile { 
+id        String   @id @default(uuid())
+student   Student?
+name      String
+kinship   Kinship
+phone     String
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
 }
