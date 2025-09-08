@@ -29,6 +29,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4   # 🔥 Checkout repo so git commands work
+
       - name: Set status, date, links and author
         run: |
           NOW=$(date +"%Y-%m-%d %H:%M:%S")
@@ -43,8 +45,7 @@ jobs:
           REPO=${{ github.repository }}
           COMMIT_URL="https://github.com/$REPO/commit/$COMMIT_SHA"
           PR_URL="${{ github.event.pull_request.html_url }}"
-          
-          # Nom et email de l'auteur du commit
+
           AUTHOR_NAME=$(git log -1 --pretty=format:'%an' $COMMIT_SHA)
           AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae' $COMMIT_SHA)
 
