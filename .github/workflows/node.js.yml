@@ -29,7 +29,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Set status and date
+      - name: Set status, date, links and author
         run: |
           NOW=$(date +"%Y-%m-%d %H:%M:%S")
           if [ "${{ needs.build.result }}" == "success" ]; then
@@ -37,13 +37,34 @@ jobs:
           else
             STATUS="❌ Build failed"
           fi
+
+          COMMIT_SHA=${{ github.sha }}
+          SHORT_SHA=$(echo $COMMIT_SHA | cut -c1-7)
+          REPO=${{ github.repository }}
+          COMMIT_URL="https://github.com/$REPO/commit/$COMMIT_SHA"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          
+          # Nom et email de l'auteur du commit
+          AUTHOR_NAME=$(git log -1 --pretty=format:'%an' $COMMIT_SHA)
+          AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae' $COMMIT_SHA)
+
           echo "NOW=$NOW" >> $GITHUB_ENV
           echo "STATUS=$STATUS" >> $GITHUB_ENV
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "COMMIT_URL=$COMMIT_URL" >> $GITHUB_ENV
+          echo "PR_URL=$PR_URL" >> $GITHUB_ENV
+          echo "AUTHOR_NAME=$AUTHOR_NAME" >> $GITHUB_ENV
+          echo "AUTHOR_EMAIL=$AUTHOR_EMAIL" >> $GITHUB_ENV
 
       - name: Send WhatsApp via Twilio
         run: |
           curl -X POST "https://api.twilio.com/2010-04-01/Accounts/${{ secrets.TWILIO_ACCOUNT_SID }}/Messages.json" \
-          --data-urlencode "Body=${STATUS} at ${NOW}: PR #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.html_url }}" \
+          --data-urlencode "Body=${STATUS} at ${NOW} \
+          Repository: $REPO \
+          Commit SHA: $SHORT_SHA → $COMMIT_URL \
+          Pull Request: $PR_URL \
+          Author Name: $AUTHOR_NAME \
+          Author Email: $AUTHOR_EMAIL" \
           --data-urlencode "From=whatsapp:+14155238886" \
           --data-urlencode "To=whatsapp:+237658989324" \
           -u "${{ secrets.TWILIO_ACCOUNT_SID }}:${{ secrets.TWILIO_AUTH_TOKEN }}"
