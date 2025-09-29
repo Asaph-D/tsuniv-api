@@ -1,8 +1,7 @@
-// src/sqlite/sqlite.module.ts
-import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './entities/cache.entities';
-import { SqliteService } from './sqlite.service';
+import { ResetCodeService } from './resetCode.service';
+import { ResetCode } from './entities/cache.entities';
+import { Global, Module } from '@nestjs/common';
 
 @Global()
 @Module({
@@ -10,12 +9,13 @@ import { SqliteService } from './sqlite.service';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'local.db',
-      entities: [User],
+      entities: [ResetCode],
       synchronize: true,
+      logging: true,
     }),
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([ResetCode]), // ← nécessaire pour InjectRepository
   ],
-  providers: [SqliteService],
-  exports: [SqliteService],
+  providers: [ResetCodeService],
+  exports: [ResetCodeService],
 })
 export class SqliteModule {}

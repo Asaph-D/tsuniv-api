@@ -33,17 +33,17 @@ export class AuthController {
       forbidNonWhitelisted: true,
     }),
   )
-  async Login(
+  async login(
     @Body('authBody') authBody: userAuthDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    console.log(authBody);
     const { access_token } = await this.authService.loginUser(authBody);
     response.cookie('authToken', access_token, {
       httpOnly: true,
       secure: true,
       maxAge: 3600000 * 24 * 7, // 7Jours
     });
+    return { message: 'Connexion réussie', user: authBody.phone };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -106,5 +106,19 @@ export class AuthController {
       pieceIdentite: piece,
     });
   }
+
+  @Post('/send-otp')
+  async sendOtp(@Body('phone') phone: string) {
+    return this.authService.sendOtp(phone);
+  }
+
+  @Post('/verify-otp')
+  async verifyOtp(@Body() body: { phone: string; code: string }) {
+    return this.authService.verifyOtp(body.phone, body.code);
+  }
+
+  @Post('/reset-password')
+  async resetPassword(@Body() body: { phone: string; newPassword: string }) {
+    return this.authService.resetPassword(body.phone, body.newPassword);
+  }
 }
- 

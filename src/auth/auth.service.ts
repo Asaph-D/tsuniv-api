@@ -5,6 +5,7 @@ import { CreateStudentDto } from './dto/student.dto';
 import { Express } from 'express';
 import * as argon2 from 'argon2';
 import { userAuthDto } from './dto/userAuth.dto';
+import { ResetCodeService } from 'src/sqlite/resetCode.service';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +14,7 @@ export class AuthService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly jwtService: JwtService,
+    private readonly resetCodeService: ResetCodeService,
   ) {}
 
   private hashPassword(password: string): Promise<string> {
@@ -248,5 +250,66 @@ export class AuthService {
 
     this.logger.log(`✅ Étudiant inscrit : ${studentId}`);
     return { message: 'Inscription réussie' };
+  }
+
+  async sendOtp(phone: string) {
+    if (!phone.match(/^\+2376\d{8}$/)) {
+      throw new BadRequestException('Format de numéro invalide.');
+    }
+
+    const supabase = this.supabaseService.getClient();
+    const { data: user, error } = await supabase
+      .from('User')
+      .select('id')
+      .eq('phone', phone)
+      .single();
+
+    if (error || !user) {
+      throw new BadRequestException("Ce numéro n'est pas associé à un compte.");
+    }
+
+    const code = await this.resetCodeService.createCode(phone);
+
+    // Envoie du code par SMS (à intégrer selon ton service SMS)
+    console.log(`Code envoyé à ${phone} : ${code}`);
+
+    return { message: 'Code envoyé avec succès.' };
+  }
+
+  async verifyOtp(phone: string, code: string) {
+    console.log(code, phone);
+    const isValid = await this.resetCodeService.verifyCode(phone, code);
+    console.log(isValid);
+    if (!isValid) {
+      throw new BadRequestException('Code invalide ou expiré.');
+    }
+
+    return { message: 'Code vérifié avec succès.' };
+  }
+  async resetPassword(phone: string, newPassword: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data: user, error } = await supabase
+      .from('User')
+      .select('id')
+      .eq('phone', phone)
+      .single();
+
+    if (error || !user) {
+      throw new BadRequestException('Utilisateur introuvable.');
+    }
+
+    const hashedPassword = await argon2.hash(newPassword);
+
+    const { error: updateError } = await supabase
+      .from('User')
+      .update({ password: hashedPassword })
+      .eq('id', user.id);
+
+    if (updateError) {
+      throw new BadRequestException('Échec de la mise à jour du mot de passe.');
+    }
+
+    return { message: 'Mot de passe réinitialisé avec succès.' };
   }
 }

@@ -1,14 +1,25 @@
-// src/sqlite/entities/cache.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+// reset-code.entity.ts
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity()
-export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
+export class ResetCode {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
-  nom: string;
+  phone: string;
 
   @Column()
-  email: string;
+  code: string;
+
+  @Column()
+  expiresAt: Date;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }

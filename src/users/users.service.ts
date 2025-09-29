@@ -1,15 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { SqliteService } from 'src/sqlite/sqlite.service';
 import { SupabaseService } from 'src/supabase/supabase.service';
 import { plainToInstance } from 'class-transformer';
 import { UserProfileResponseDto } from './dto/user';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private readonly sqlite: SqliteService,
-    private readonly supabaseService: SupabaseService,
-  ) {}
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   private supabase = this.supabaseService.getClient();
 
